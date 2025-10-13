@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { StockChart } from "@/components/stock-chart"
-import { PredictionPanel } from "@/components/prediction-panel"
+import  PredictionPanel  from "@/components/prediction-panel"
 import { PredictionHistory } from "@/components/prediction-history"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -187,7 +187,7 @@ export default function StockDetailPage() {
                 <Button className="w-full" onClick={() => setShowPrediction(true)}>
                   Generate Prediction
                 </Button>
-                {showPrediction && <PredictionPanel symbol={symbol} currentPrice={stockData.price} />}
+                {showPrediction && <PredictionPanel />}
               </CardContent>
             </Card>
           </div>

@@ -1,119 +1,90 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { TrendingUp, TrendingDown, Loader2 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import React, { useState } from "react"
 
-interface PredictionPanelProps {
-  symbol: string
-  currentPrice: number
-}
-
-export function PredictionPanel({ symbol, currentPrice }: PredictionPanelProps) {
+export default function PredictionPanel() {
+  const [symbol, setSymbol] = useState("TCS")
+  const [horizon, setHorizon] = useState(1)
+  const [loading, setLoading] = useState(false)
   const [prediction, setPrediction] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchPrediction = async () => {
-      setIsLoading(true)
-      try {
-        const response = await fetch(`/api/predict?symbol=${symbol}`)
-        const data = await response.json()
-        setPrediction(data)
-      } catch (error) {
-        console.error("Prediction error:", error)
-      } finally {
-        setIsLoading(false)
-      }
+  const handlePredict = async () => {
+    setLoading(true)
+    setError(null)
+    setPrediction(null)
+
+    try {
+      const res = await fetch(`/api/predict?symbol=${symbol}&horizon=${horizon}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Prediction failed")
+      setPrediction(data)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
-
-    fetchPrediction()
-  }, [symbol])
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="py-8 flex flex-col items-center justify-center gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Analyzing market data...</p>
-        </CardContent>
-      </Card>
-    )
   }
-
-  if (!prediction) {
-    return (
-      <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">Unable to generate prediction</CardContent>
-      </Card>
-    )
-  }
-
-  const isUptrend = prediction.direction === "UP"
-  const confidenceLevel = prediction.confidence * 100
 
   return (
-    <Card className="border-2">
-      <CardContent className="pt-6 space-y-4">
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground mb-2">Predicted Next-Day Price</p>
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-3xl font-bold">${prediction.predicted_price.toFixed(2)}</span>
-            {isUptrend ? (
-              <TrendingUp className="h-6 w-6 text-success" />
-            ) : (
-              <TrendingDown className="h-6 w-6 text-destructive" />
-            )}
-          </div>
-        </div>
+    <div className="max-w-md mx-auto p-6 bg-white rounded-2xl shadow-lg">
+      <h2 className="text-xl font-semibold mb-4 text-gray-800 text-center">
+        Stock Price Prediction
+      </h2>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Direction</span>
-            <Badge variant={isUptrend ? "default" : "destructive"} className={cn(isUptrend && "bg-success")}>
-              {prediction.direction}
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Expected Change</span>
-            <span className={cn("font-medium", isUptrend ? "text-success" : "text-destructive")}>
-              {isUptrend ? "+" : ""}
-              {prediction.change_percent.toFixed(2)}%
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Model Confidence</span>
-            <span className="font-medium">{confidenceLevel.toFixed(0)}%</span>
-          </div>
-        </div>
+      {/* Symbol Selection */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Select Stock Symbol</label>
+        <select
+          value={symbol}
+          onChange={(e) => setSymbol(e.target.value)}
+          className="w-full p-2 border border-gray-300 rounded-lg"
+        >
+          <option value="TCS">TCS</option>
+          <option value="INFY">INFY</option>
+          <option value="RELIANCE">RELIANCE</option>
+          <option value="HDFCBANK">HDFCBANK</option>
+          <option value="ICICIBANK">ICICIBANK</option>
+          <option value="SBIN">SBIN</option>
+        </select>
+      </div>
 
-        <div className="pt-2">
-          <div className="w-full bg-secondary rounded-full h-2">
-            <div
-              className={cn(
-                "h-2 rounded-full transition-all",
-                confidenceLevel >= 70 ? "bg-success" : confidenceLevel >= 50 ? "bg-primary" : "bg-destructive",
-              )}
-              style={{ width: `${confidenceLevel}%` }}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            {confidenceLevel >= 70
-              ? "High confidence"
-              : confidenceLevel >= 50
-                ? "Moderate confidence"
-                : "Low confidence"}
-          </p>
-        </div>
+      {/* Horizon Selection */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Forecast Days</label>
+        <select
+          value={horizon}
+          onChange={(e) => setHorizon(Number(e.target.value))}
+          className="w-full p-2 border border-gray-300 rounded-lg"
+        >
+          <option value={1}>1 Day</option>
+          <option value={3}>3 Days</option>
+          <option value={5}>5 Days</option>
+          <option value={7}>7 Days</option>
+        </select>
+      </div>
 
-        <div className="pt-2 border-t">
-          <p className="text-xs text-muted-foreground text-center">
-            AI predictions are for informational purposes only. Always do your own research before investing.
-          </p>
+      <button
+        onClick={handlePredict}
+        disabled={loading}
+        className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+      >
+        {loading ? "Predicting..." : "Predict"}
+      </button>
+
+      {error && <p className="mt-3 text-red-500 text-sm text-center">{error}</p>}
+
+      {prediction && (
+        <div className="mt-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+          <h3 className="text-lg font-semibold mb-2 text-center">Prediction Result</h3>
+          <p><strong>Symbol:</strong> {prediction.symbol}</p>
+          <p><strong>Predicted Price:</strong> ₹{prediction.predicted_price.toFixed(2)}</p>
+          <p><strong>Expected Change:</strong> {prediction.change_percent.toFixed(2)}%</p>
+          <p><strong>Direction:</strong> {prediction.direction}</p>
+          <p><strong>Model Confidence:</strong> {(prediction.confidence * 100).toFixed(1)}%</p>
+          <p className="text-xs text-gray-500 mt-2 text-center">Model: {prediction.model}</p>
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 }
