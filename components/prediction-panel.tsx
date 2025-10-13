@@ -2,8 +2,12 @@
 
 import React, { useState } from "react"
 
-export default function PredictionPanel() {
-  const [symbol, setSymbol] = useState("TCS")
+interface PredictionPanelProps {
+  symbol: string
+  currentPrice: number
+}
+
+export default function PredictionPanel({ symbol, currentPrice }: PredictionPanelProps) {
   const [horizon, setHorizon] = useState(1)
   const [loading, setLoading] = useState(false)
   const [prediction, setPrediction] = useState<any>(null)
@@ -29,25 +33,8 @@ export default function PredictionPanel() {
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-2xl shadow-lg">
       <h2 className="text-xl font-semibold mb-4 text-gray-800 text-center">
-        Stock Price Prediction
+        Stock Price Prediction for {symbol}
       </h2>
-
-      {/* Symbol Selection */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">Select Stock Symbol</label>
-        <select
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-lg"
-        >
-          <option value="TCS">TCS</option>
-          <option value="INFY">INFY</option>
-          <option value="RELIANCE">RELIANCE</option>
-          <option value="HDFCBANK">HDFCBANK</option>
-          <option value="ICICIBANK">ICICIBANK</option>
-          <option value="SBIN">SBIN</option>
-        </select>
-      </div>
 
       {/* Horizon Selection */}
       <div className="mb-4">

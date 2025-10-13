@@ -187,7 +187,7 @@ export default function StockDetailPage() {
                 <Button className="w-full" onClick={() => setShowPrediction(true)}>
                   Generate Prediction
                 </Button>
-                {showPrediction && <PredictionPanel />}
+                {showPrediction && <PredictionPanel symbol={symbol} currentPrice={stockData.price} />}
               </CardContent>
             </Card>
           </div>
