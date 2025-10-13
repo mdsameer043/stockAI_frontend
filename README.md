@@ -1,0 +1,213 @@
+Of course! A well-formatted README is crucial for any project. Here is a beautified and more organized version of your content, using better markdown formatting, emojis for visual cues, and tables for clarity.
+
+📈 Stock Prediction Dashboard
+An AI-powered stock market prediction platform built with Next.js, FastAPI, and MongoDB. This dashboard provides real-time stock data, AI-driven price predictions, and portfolio management tools in a sleek, responsive interface.
+
+<p align="center">
+<img src="https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js">
+<img src="https://img.shields.io/badge/FastAPI-0.110-blue?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
+<img src="https://img.shields.io/badge/MongoDB-4A9446?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB">
+<img src="https://img.shields.io/badge/TensorFlow-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white" alt="TensorFlow">
+<img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+<img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge" alt="License: MIT">
+</p>
+
+📋 Table of Contents
+Features
+
+Tech Stack
+
+Getting Started
+
+Prerequisites
+
+Local Development
+
+Docker Deployment
+
+Project Structure
+
+API Endpoints
+
+Environment Variables
+
+Contributing
+
+License
+
+Acknowledgments
+
+✨ Features
+✅ Real-time Stock Data: Live stock prices and market data from Yahoo Finance.
+
+🧠 AI Predictions: Next-day price predictions using a powerful AttCLX deep learning model.
+
+📊 Interactive Charts: Beautiful, responsive candlestick charts with key technical indicators.
+
+⭐ Watchlist: Create and manage a personal watchlist to track your favorite stocks.
+
+💼 Portfolio Management: Monitor your investments and track their performance.
+
+🔐 User Authentication: Secure user registration and login functionality.
+
+📱 Responsive Design: A seamless experience on both desktop and mobile devices.
+
+🛠️ Tech Stack
+Here's a breakdown of the major technologies and libraries used in this project.
+
+Category	Technology	Description
+Frontend	Next.js 15	React framework with App Router for the UI.
+TypeScript	For type-safe and scalable code.
+Tailwind CSS	A utility-first CSS framework for styling.
+Recharts	For creating interactive data visualizations.
+shadcn/ui	Beautifully designed, reusable UI components.
+Backend	FastAPI	High-performance Python framework for the API.
+yfinance	A reliable wrapper for the Yahoo Finance API.
+Database	MongoDB	NoSQL database for storing user data.
+ML Model	TensorFlow	Framework for building and training the model.
+AttCLX	An Attention-based LSTM model for prediction.
+Technical Indicators	MA, RSI, MACD, and Bollinger Bands.
+DevOps	Docker & Docker Compose	For containerization and easy deployment.
+
+Export to Sheets
+🚀 Getting Started
+Follow these instructions to get a copy of the project up and running on your local machine.
+
+Prerequisites
+Node.js (v20 or higher)
+
+Python (v3.11 or higher)
+
+Docker & Docker Compose
+
+MongoDB (or use the provided Docker setup)
+
+💻 Local Development
+Clone the repository:
+
+Bash
+
+git clone <repository-url>
+cd stock-prediction-dashboard
+Set up the Frontend:
+
+Bash
+
+# Install dependencies
+npm install
+
+# Create a .env.local file (see Environment Variables section)
+touch .env.local
+
+# Run the development server
+npm run dev
+Set up the ML Service (in a new terminal):
+
+Bash
+
+cd ml-service
+
+# Create and activate a virtual environment
+python -m venv venv
+# On Windows: venv\Scripts\activate
+# On macOS/Linux: source venv/bin/activate
+
+# Install Python packages
+pip install -r requirements.txt
+
+# Run the API server
+uvicorn main:app --reload
+Start MongoDB:
+If you're not using Docker, make sure your local MongoDB instance is running.
+
+Your application should now be available at http://localhost:3000.
+
+🐳 Docker Deployment
+The easiest way to run the entire stack (Frontend, Backend, and DB).
+
+Build and Run with Docker Compose:
+From the root of the project, run:
+
+Bash
+
+docker-compose up --build
+Access the services:
+
+Frontend App: http://localhost:3000
+
+ML Service Docs: http://localhost:8000/docs
+
+MongoDB Connection: mongodb://localhost:27017
+
+📁 Project Structure
+.
+├── app/                  # Next.js app directory
+│   ├── api/              # API routes (backend for frontend)
+│   ├── dashboard/        # Dashboard page components
+│   └── stock/            # Dynamic stock detail pages
+├── components/           # Shared React components
+│   ├── ui/               # shadcn/ui components
+│   ├── stock-chart.tsx   # Recharts chart component
+│   └── ...
+├── lib/                  # Utility functions
+│   ├── auth.ts           # Authentication logic
+│   └── mongodb.ts        # Database connection helper
+├── ml-service/           # Python ML service (FastAPI)
+│   ├── main.py           # FastAPI application
+│   ├── requirements.txt
+│   └── Dockerfile
+├── docker-compose.yml    # Docker orchestration file
+└── Dockerfile            # Frontend container Dockerfile
+🌐 API Endpoints
+Frontend API (Next.js)
+GET /api/stocks/market-overview: Get top gainers, losers, and trending stocks.
+
+GET /api/stocks/search?q={query}: Search for a stock.
+
+GET /api/stocks/{symbol}: Get detailed information for a stock.
+
+GET /api/predict?symbol={symbol}: Proxy endpoint to get AI prediction from ML service.
+
+GET | POST | DELETE /api/watchlist: Manage user's watchlist.
+
+ML Service (FastAPI)
+GET /predict?symbol={symbol}: Generate and return the next-day prediction.
+
+GET /historical?symbol={symbol}&period={period}: Get historical market data.
+
+GET /health: Simple health check endpoint.
+
+🔑 Environment Variables
+Frontend (.env.local)
+Code snippet
+
+MONGODB_URI=mongodb://localhost:27017/stock_prediction
+ML_SERVICE_URL=http://localhost:8000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+ML Service (ml-service/.env)
+Code snippet
+
+MODEL_PATH=/app/models
+PYTHONUNBUFFERED=1
+🤝 Contributing
+Contributions are welcome! Please follow these steps to contribute:
+
+Fork the repository.
+
+Create a new feature branch (git checkout -b feature/amazing-feature).
+
+Commit your changes (git commit -m 'Add amazing feature').
+
+Push to the branch (git push origin feature/amazing-feature).
+
+Open a Pull Request.
+
+📄 License
+This project is licensed under the MIT License. See the LICENSE file for details.
+
+🙏 Acknowledgments
+Yahoo Finance for providing the stock market data.
+
+shadcn/ui for the fantastic UI components.
+
+Vercel for creating the Next.js framework.
