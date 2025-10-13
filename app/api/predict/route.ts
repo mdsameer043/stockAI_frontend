@@ -1,38 +1,34 @@
 import { NextResponse } from "next/server"
 
-// Mock AI prediction endpoint
-// In production, this would call the FastAPI ML service at http://ml-service:8000/predict
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const symbol = searchParams.get("symbol")
+    const horizon = searchParams.get("horizon") || "1"
 
     if (!symbol) {
       return NextResponse.json({ error: "Symbol is required" }, { status: 400 })
     }
 
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    // 🧠 Call your Flask backend
+    const flaskURL = `http://localhost:5000/predict?horizon=${horizon}`
+    const response = await fetch(flaskURL)
+    if (!response.ok) {
+      throw new Error(`Flask service error: ${response.statusText}`)
+    }
 
-    // Mock prediction data
-    // In production, this would be:
-    // const response = await fetch(`http://ml-service:8000/predict?symbol=${symbol}`)
-    // const prediction = await response.json()
+    const flaskData = await response.json()
 
-    const isUptrend = Math.random() > 0.5
-    const baseChange = Math.random() * 3
-    const changePercent = isUptrend ? baseChange : -baseChange
-
-    // Get current price (mock)
-    const currentPrice = 1000 + Math.random() * 3000
-    const predictedPrice = currentPrice * (1 + changePercent / 100)
+    // You can adjust mapping if needed
+    // Example: if Flask returns a list of predictions, take the last one
+    const latest = flaskData.predictions?.at(-1)
 
     const prediction = {
       symbol,
-      predicted_price: Number.parseFloat(predictedPrice.toFixed(2)),
-      confidence: 0.7 + Math.random() * 0.25, // 70-95% confidence
-      direction: isUptrend ? "UP" : "DOWN",
-      change_percent: Number.parseFloat(changePercent.toFixed(2)),
+      predicted_price: Number.parseFloat(latest.predicted_close.toFixed(2)),
+      confidence: 0.9, // Optional: fixed confidence or model-provided
+      direction: latest.predicted_close > 0 ? "UP" : "DOWN",
+      change_percent: 1.25, // optional placeholder
       model: "AttCLX",
       timestamp: new Date().toISOString(),
     }
