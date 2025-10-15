@@ -1,73 +1,58 @@
-// MongoDB connection utility
-// This uses the MongoDB Node.js driver for database operations
+// lib/mongodb.ts
 
-let cachedClient: any = null
-let cachedDb: any = null
+import { MongoClient, Db, ObjectId } from "mongodb"
 
-export async function connectToDatabase() {
-  // In development, use cached connection
-  if (cachedClient && cachedDb) {
-    return { client: cachedClient, db: cachedDb }
-  }
-
-  // Mock MongoDB connection for demo
-  // In production, use: const client = await MongoClient.connect(process.env.MONGODB_URI!)
-  const mockClient = {
-    db: (name: string) => ({
-      collection: (collectionName: string) => ({
-        find: () => ({ toArray: async () => [] }),
-        findOne: async () => null,
-        insertOne: async (doc: any) => ({ insertedId: "mock-id" }),
-        updateOne: async () => ({ modifiedCount: 1 }),
-        deleteOne: async () => ({ deletedCount: 1 }),
-      }),
-    }),
-  }
-
-  cachedClient = mockClient
-  cachedDb = mockClient.db("stock_prediction")
-
-  return { client: cachedClient, db: cachedDb }
+// Extend the global scope to hold our cached connection
+declare global {
+  var _mongoClientPromise: Promise<MongoClient> | undefined
 }
 
-// Database models and schemas
-export interface User {
-  _id?: string
-  email: string
-  password: string
+// Setup URI and Options
+const uri = process.env.MONGODB_URI
+const options = {}
+
+if (!uri) {
+  throw new Error("❌ Missing MONGODB_URI environment variable in .env.local")
+}
+
+let client: MongoClient
+let clientPromise: Promise<MongoClient>
+
+// Implement global caching logic for Next.js
+if (process.env.NODE_ENV === "development") {
+  if (!global._mongoClientPromise) {
+    client = new MongoClient(uri, options)
+    global._mongoClientPromise = client.connect()
+  }
+  clientPromise = global._mongoClientPromise
+} else {
+  client = new MongoClient(uri, options)
+  clientPromise = client.connect()
+}
+
+// Interface for User documents, ensuring _id is handled correctly
+export interface DbUser {
+  _id: ObjectId
   name: string
+  email: string
+  password: string // Hashed password
   createdAt: Date
   updatedAt: Date
 }
 
-export interface Watchlist {
-  _id?: string
-  userId: string
-  symbol: string
-  addedAt: Date
-}
+// Connect function implementation
+export async function connectToDatabase() {
+  const connectedClient = await clientPromise
+  
+  // Uses the database name specified in the connection string
+  const dbName = new URL(uri!).pathname.substring(1) 
+  
+  if (!dbName) {
+      throw new Error("MongoDB URI must include a database name.")
+  }
 
-export interface Portfolio {
-  _id?: string
-  userId: string
-  symbol: string
-  shares: number
-  avgPrice: number
-  addedAt: Date
-  updatedAt: Date
-}
-
-export interface Prediction {
-  _id?: string
-  userId: string
-  symbol: string
-  predictedPrice: number
-  confidence: number
-  direction: "UP" | "DOWN"
-  changePercent: number
-  model: string
-  createdAt: Date
-  actualPrice?: number
-  actualDirection?: "UP" | "DOWN"
-  wasCorrect?: boolean
+  const db = connectedClient.db(dbName)
+  
+  // console.log("✅ Successfully connected to MongoDB via cached client")
+  return { client: connectedClient, db }
 }

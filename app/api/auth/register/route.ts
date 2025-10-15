@@ -1,12 +1,15 @@
-import { NextResponse } from "next/server"
+// app/auth/register/route.ts
 
-// Placeholder for MongoDB integration
-// In production, this would connect to MongoDB and hash passwords
+import { NextResponse } from "next/server"
+import { createUser, findUserByEmail } from "@/lib/db-helpers"
+import jwt from "jsonwebtoken"
+
+const JWT_SECRET = process.env.JWT_SECRET || "secret"
+
 export async function POST(request: Request) {
   try {
     const { name, email, password } = await request.json()
 
-    // Validate input
     if (!name || !email || !password) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 })
     }
@@ -15,28 +18,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 })
     }
 
-    // TODO: Connect to MongoDB
-    // TODO: Check if user already exists
-    // TODO: Hash password with bcrypt
-    // TODO: Save user to database
+    const existingUser = await findUserByEmail(email)
+    if (existingUser) {
+      return NextResponse.json({ error: "User already exists" }, { status: 400 })
+    }
 
-    // Mock JWT token generation
-    const mockToken = Buffer.from(
-      JSON.stringify({
-        email,
-        name,
-        userId: Math.random().toString(36).substring(7),
-        exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
-      }),
-    ).toString("base64")
+    // 🚨 Correction for the user object being returned: createUser returns a user with a string _id
+    const user = await createUser(email, password, name)
 
-    return NextResponse.json({
-      success: true,
-      token: mockToken,
-      user: { name, email },
+    const token = jwt.sign(
+      { userId: user._id, name: user.name, email: user.email },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    )
+
+    return NextResponse.json({ 
+        success: true, 
+        token, 
+        user: { id: user._id, name: user.name, email: user.email } // Use the string ID
     })
-  } catch (error) {
-    console.error("Registration error:", error)
+  } catch (err) {
+    console.error(err)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

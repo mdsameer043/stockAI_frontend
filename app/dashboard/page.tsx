@@ -7,15 +7,27 @@ import { StockCard } from "@/components/stock-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TrendingUp, TrendingDown, Activity } from "lucide-react"
+import { requireAuth } from "@/lib/auth"
 
 export default function DashboardPage() {
+  const [user, setUser] = useState<any>(null)
   const [topGainers, setTopGainers] = useState<any[]>([])
   const [topLosers, setTopLosers] = useState<any[]>([])
   const [trending, setTrending] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [authLoading, setAuthLoading] = useState(true)
 
+  // Check authentication on mount
   useEffect(() => {
-    // Fetch stock data
+    const u = requireAuth()
+    setUser(u)
+    setAuthLoading(false)
+  }, [])
+
+  // Fetch stock data after auth check passes
+  useEffect(() => {
+    if (!user) return
+
     const fetchStocks = async () => {
       try {
         const response = await fetch("/api/stocks/market-overview")
@@ -31,16 +43,21 @@ export default function DashboardPage() {
     }
 
     fetchStocks()
-  }, [])
+  }, [user])
+
+  if (authLoading) return <p>Loading...</p>
+  if (!user) return null // Redirect handled by requireAuth
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-balance">Market Overview</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-balance">
+            Market Overview
+          </h1>
           <p className="text-muted-foreground mt-2">
-            Search stocks and get AI-powered predictions for smarter investments
+            Welcome, {user.name}. Search stocks and get AI-powered predictions for smarter investments
           </p>
         </div>
 
@@ -59,6 +76,7 @@ export default function DashboardPage() {
               <p className="text-xs text-muted-foreground">Stocks up today</p>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Top Losers</CardTitle>
@@ -69,6 +87,7 @@ export default function DashboardPage() {
               <p className="text-xs text-muted-foreground">Stocks down today</p>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Trending</CardTitle>
@@ -91,7 +110,9 @@ export default function DashboardPage() {
 
           <TabsContent value="gainers" className="space-y-4">
             {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading stocks...</div>
+              <div className="text-center py-8 text-muted-foreground">
+                Loading stocks...
+              </div>
             ) : topGainers.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {topGainers.map((stock) => (
@@ -100,14 +121,18 @@ export default function DashboardPage() {
               </div>
             ) : (
               <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">No data available</CardContent>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  No data available
+                </CardContent>
               </Card>
             )}
           </TabsContent>
 
           <TabsContent value="losers" className="space-y-4">
             {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading stocks...</div>
+              <div className="text-center py-8 text-muted-foreground">
+                Loading stocks...
+              </div>
             ) : topLosers.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {topLosers.map((stock) => (
@@ -116,14 +141,18 @@ export default function DashboardPage() {
               </div>
             ) : (
               <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">No data available</CardContent>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  No data available
+                </CardContent>
               </Card>
             )}
           </TabsContent>
 
           <TabsContent value="trending" className="space-y-4">
             {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading stocks...</div>
+              <div className="text-center py-8 text-muted-foreground">
+                Loading stocks...
+              </div>
             ) : trending.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {trending.map((stock) => (
@@ -132,7 +161,9 @@ export default function DashboardPage() {
               </div>
             ) : (
               <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">No data available</CardContent>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  No data available
+                </CardContent>
               </Card>
             )}
           </TabsContent>

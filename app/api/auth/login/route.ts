@@ -1,37 +1,58 @@
-import { NextResponse } from "next/server"
+// app/auth/login/route.ts
 
-// Placeholder for MongoDB integration
-// In production, this would verify credentials against MongoDB
+import { NextResponse } from "next/server"
+import { findUserByEmail } from "@/lib/db-helpers"
+import bcrypt from "bcryptjs"
+import jwt from "jsonwebtoken"
+import { DbUser } from "@/lib/mongodb" // Import DbUser interface
+
+const JWT_SECRET = process.env.JWT_SECRET || "secret"
+
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json()
 
-    // Validate input
     if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Email and password are required" },
+        { status: 400 }
+      )
     }
 
-    // TODO: Connect to MongoDB
-    // TODO: Find user by email
-    // TODO: Verify password with bcrypt
+    const user: DbUser | null = await findUserByEmail(email)
+    if (!user) {
+      // User not found in database
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+    }
 
-    // Mock authentication (accept any credentials for demo)
-    const mockToken = Buffer.from(
-      JSON.stringify({
-        email,
-        name: "Demo User",
-        userId: Math.random().toString(36).substring(7),
-        exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
-      }),
-    ).toString("base64")
+    // ✅ Validate password using bcrypt
+    const isPasswordValid = await bcrypt.compare(password, user.password)
+    if (!isPasswordValid) {
+      // Password does not match
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+    }
 
+    // 🚨 CORRECTION: Ensure user._id is passed as a string for JWT, as MongoDB returns an ObjectId
+    const userIdString = user._id.toString()
+
+    // ✅ Generate JWT token
+    const token = jwt.sign(
+      { userId: userIdString, name: user.name, email: user.email },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    )
+
+    // ✅ Send success response
     return NextResponse.json({
       success: true,
-      token: mockToken,
-      user: { name: "Demo User", email },
+      token,
+      user: { id: userIdString, name: user.name, email: user.email },
     })
-  } catch (error) {
-    console.error("Login error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } catch (err) {
+    console.error("❌ Login Error:", err)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
   }
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation" 
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { StockChart } from "@/components/stock-chart"
 import  PredictionPanel  from "@/components/prediction-panel"
@@ -13,9 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, TrendingUp, TrendingDown, Star } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-
 export default function StockDetailPage() {
   const params = useParams()
+  const router = useRouter() 
   const symbol = params.symbol as string
   const [stockData, setStockData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -90,12 +90,15 @@ export default function StockDetailPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Back Button */}
-        <Link href="/dashboard">
+        {/* <Link href="/dashboard">
           <Button variant="ghost" className="gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
           </Button>
-        </Link>
+        </Link> */}
+        <Button className="mt-4" onClick={() => router.push("/dashboard")}>
+            <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+         </Button>
 
         {/* Stock Header */}
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
