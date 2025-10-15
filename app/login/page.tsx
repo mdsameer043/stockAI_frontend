@@ -1,10 +1,7 @@
+// app/login/page.tsx
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import Link from "next/link"
 import { TrendingUp } from "lucide-react"
 
@@ -37,31 +34,54 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle>Welcome Back</CardTitle>
-          <CardDescription>Sign in to access your dashboard</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Email</Label>
-              <Input value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </div>
-            <div>
-              <Label>Password</Label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-2">
-            <Button type="submit" disabled={isLoading}>{isLoading ? "Signing in..." : "Sign In"}</Button>
-            <p className="text-sm text-center">
-              Don't have an account? <Link href="/register" className="text-blue-500">Register</Link>
-            </p>
-          </CardFooter>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div className="p-6 text-center border-b">
+          <div className="inline-flex items-center justify-center bg-black text-white rounded-xl w-12 h-12 mx-auto mb-3">
+            <TrendingUp size={20} />
+          </div>
+          <h1 className="text-2xl font-extrabold">StockAI</h1>
+          <p className="text-sm text-gray-500 mt-1">Sign in to your account to access AI-powered stock predictions</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="space-y-4">
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              type="email"
+              placeholder="you@example.com"
+            />
+
+            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="mt-6 w-full bg-black text-white py-3 rounded-lg font-medium shadow-sm disabled:opacity-60"
+          >
+            {isLoading ? "Signing in..." : "Sign in"}
+          </button>
+
+          <p className="text-center text-sm text-gray-600 mt-4">
+            Don't have an account?{" "}
+            <Link href="/register" className="font-medium text-black underline">
+              Sign up
+            </Link>
+          </p>
         </form>
-      </Card>
+      </div>
     </div>
   )
 }

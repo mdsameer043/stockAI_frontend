@@ -1,10 +1,8 @@
 // app/auth/register/route.ts
-
 import { NextResponse } from "next/server"
-import { createUser, findUserByEmail } from "@/lib/db-helpers"
-import jwt from "jsonwebtoken"
-
-const JWT_SECRET = process.env.JWT_SECRET || "secret"
+import { createUser, findUserByEmail, setVerificationToken } from "@/lib/db-helpers"
+// import { sendVerificationEmail } from "@/lib/mail"
+import crypto from "crypto"
 
 export async function POST(request: Request) {
   try {
@@ -23,22 +21,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User already exists" }, { status: 400 })
     }
 
-    // 🚨 Correction for the user object being returned: createUser returns a user with a string _id
-    const user = await createUser(email, password, name)
+    // Create user with default emailVerified false
+    const user = await createUser(email, password, name, { emailVerified: false })
 
-    const token = jwt.sign(
-      { userId: user._id, name: user.name, email: user.email },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    )
+    // Generate a verification token and expiry (24 hours)
+    const verificationToken = crypto.randomBytes(32).toString("hex")
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
-    return NextResponse.json({ 
-        success: true, 
-        token, 
-        user: { id: user._id, name: user.name, email: user.email } // Use the string ID
-    })
+    // Save token on the user document
+    await setVerificationToken(user._id, verificationToken, verificationExpires)
+
+    // Send verification email (if mail server not configured, sendVerificationEmail logs link)
+    // await sendVerificationEmail({
+    //   to: user.email,
+    //   name: user.name,
+    //   token: verificationToken,
+    // })
+
+    return NextResponse.json({ success: true, message: "User created. Verification email sent." })
   } catch (err) {
-    console.error(err)
+    console.error("Registration error:", err)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

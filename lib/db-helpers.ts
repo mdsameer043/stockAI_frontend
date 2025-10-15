@@ -1,14 +1,16 @@
-// lib/db-helpers.ts
-
+// lib/db-helpers.ts (updated parts)
 import { connectToDatabase, DbUser } from "./mongodb"
 import bcrypt from "bcryptjs"
-import { ObjectId } from "mongodb" // Import ObjectId
+import { ObjectId } from "mongodb"
 
-// User operations
-// Return type is corrected to match the DbUser interface, but with a string _id
-export async function createUser(email: string, password: string, name: string): Promise<Omit<DbUser, '_id'> & { _id: string }> {
+export async function createUser(
+  email: string,
+  password: string,
+  name: string,
+  extra: Partial<Record<string, any>> = {}
+): Promise<Omit<DbUser, "_id"> & { _id: string }> {
   const { db } = await connectToDatabase()
-  const users = db.collection<DbUser>("users")
+  const users = db.collection("users")
 
   const hashedPassword = await bcrypt.hash(password, 10)
 
@@ -18,12 +20,50 @@ export async function createUser(email: string, password: string, name: string):
     name,
     createdAt: new Date(),
     updatedAt: new Date(),
+    emailVerified: extra.emailVerified ?? false,
+    verificationToken: extra.verificationToken ?? null,
+    verificationExpires: extra.verificationExpires ?? null,
   }
 
   const result = await users.insertOne(user as any)
-  // 🚨 CORRECTION: Convert ObjectId to string for consistency in your API routes
   return { ...user, _id: result.insertedId.toString() }
 }
+
+export async function setVerificationToken(userId: string, token: string, expires: Date) {
+  const { db } = await connectToDatabase()
+  const users = db.collection("users")
+  await users.updateOne(
+    { _id: new ObjectId(userId) },
+    {
+      $set: {
+        verificationToken: token,
+        verificationExpires: expires,
+        updatedAt: new Date(),
+      },
+    }
+  )
+}
+
+export async function findUserByVerificationToken(token: string) {
+  const { db } = await connectToDatabase()
+  const users = db.collection<any>("users")
+  // we store verificationToken and verificationExpires fields
+  return await users.findOne({ verificationToken: token })
+}
+
+export async function verifyUserById(userId: string) {
+  const { db } = await connectToDatabase()
+  const users = db.collection("users")
+  await users.updateOne(
+    { _id: new ObjectId(userId) },
+    {
+      $set: { emailVerified: true, verificationToken: null, verificationExpires: null, updatedAt: new Date() },
+    }
+  )
+}
+
+// NOTE: keep your existing addToWatchlist, updatePredictionResult, findUserByEmail unchanged
+
 
 // Return type is corrected
 export async function findUserByEmail(email: string): Promise<DbUser | null> {
@@ -77,4 +117,39 @@ export async function updatePredictionResult(
       },
     },
   )
+}
+
+
+export async function createVerificationEntry(email: string, otp: string, payload: Record<string, any>, expiresAt: Date) {
+  const { db } = await connectToDatabase()
+  const verifications = db.collection("verifications")
+
+  // Upsert a verification entry for the email (overwrite previous OTPs)
+  const doc = {
+    email,
+    otp,
+    payload, // will hold { name, password } or any extra fields (we'll persist password hashed on user creation)
+    expiresAt,
+    createdAt: new Date(),
+  }
+
+  await verifications.updateOne(
+    { email },
+    { $set: doc },
+    { upsert: true }
+  )
+
+  return doc
+}
+
+export async function findVerificationByEmail(email: string) {
+  const { db } = await connectToDatabase()
+  const verifications = db.collection("verifications")
+  return await verifications.findOne({ email })
+}
+
+export async function deleteVerificationByEmail(email: string) {
+  const { db } = await connectToDatabase()
+  const verifications = db.collection("verifications")
+  return await verifications.deleteOne({ email })
 }

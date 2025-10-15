@@ -35,10 +35,14 @@ export interface DbUser {
   _id: ObjectId
   name: string
   email: string
-  password: string // Hashed password
+  password: string
   createdAt: Date
   updatedAt: Date
+  emailVerified?: boolean
+  verificationToken?: string | null
+  verificationExpires?: Date | null
 }
+
 
 // Connect function implementation
 export async function connectToDatabase() {
