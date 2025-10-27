@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server"
 
-export async function DELETE(request: Request, { params }: { params: { symbol: string } }) {
-  try {
-    const { symbol } = params
+let watchlist: any[] = []
 
-    // In production, remove from MongoDB
-    return NextResponse.json({ success: true, message: "Removed from watchlist" })
-  } catch (error) {
-    console.error("Error removing from watchlist:", error)
-    return NextResponse.json({ error: "Failed to remove from watchlist" }, { status: 500 })
-  }
+export async function DELETE(
+  req: Request,
+  { params }: { params: { symbol: string } }
+) {
+  const { symbol } = params
+  watchlist = watchlist.filter((s) => s.symbol !== symbol)
+  return NextResponse.json({ success: true })
 }
