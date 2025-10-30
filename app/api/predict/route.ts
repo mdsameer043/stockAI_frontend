@@ -10,20 +10,27 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Symbol is required" }, { status: 400 })
     }
 
-    // Call Flask backend
-    const flaskURL = `http://localhost:5000/predict?symbol=${symbol}&horizon=${horizon}`
-    const response = await fetch(flaskURL)
+    console.log("🔍 Prediction API called:", symbol, "Horizon:", horizon)
+
+    // --- Flask backend URL ---
+    const flaskURL = `http://127.0.0.1:5000/predict?symbol=${symbol}&horizon=${horizon}`
+    const response = await fetch(flaskURL, { method: "GET" })
+
     if (!response.ok) {
+      const errText = await response.text()
+      console.error("❌ Flask error:", errText)
       throw new Error(`Flask service error: ${response.statusText}`)
     }
 
-    const flaskData = await response.json()
+    const data = await response.json()
+    console.log("✅ Flask response:", data)
 
-    // Return Flask response directly
-    return NextResponse.json(flaskData)
-
+    return NextResponse.json(data, { status: 200 })
   } catch (error) {
     console.error("Prediction error:", error)
-    return NextResponse.json({ error: "Failed to generate prediction" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to generate prediction" },
+      { status: 500 }
+    )
   }
 }

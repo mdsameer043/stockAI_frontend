@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 
   const filtered = list.filter((s) => s.includes(q))
   const results = filtered.map((sym) => ({
-    symbol: `${sym}.NS`,
+    symbol: `${sym}`,
     name: sym,
   }))
 

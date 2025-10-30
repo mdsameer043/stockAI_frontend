@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server"
 
-// Mock prediction history endpoint
-// In production, this would fetch from MongoDB
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -11,38 +9,57 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Symbol is required" }, { status: 400 })
     }
 
-    // Mock historical predictions
-    const generateHistory = () => {
-      const history = []
-      const today = new Date()
+    console.log(`📡 Fetching prediction history for: ${symbol}`)
 
-      for (let i = 7; i >= 1; i--) {
-        const date = new Date(today)
-        date.setDate(date.getDate() - i)
+    // Number of past days (for example, last 7 predictions)
+    const days = 7
+    const history: any[] = []
 
-        const isUptrend = Math.random() > 0.5
-        const predictedPrice = 1000 + Math.random() * 3000
-        const actualPrice = predictedPrice * (0.95 + Math.random() * 0.1)
-        const actualDirection = actualPrice > predictedPrice ? "UP" : "DOWN"
+    // Loop through multiple horizons (1–7)
+    for (let horizon = 1; horizon <= days; horizon++) {
+      const flaskURL = `http://127.0.0.1:5000/predict?symbol=${symbol}&horizon=${horizon}`
+
+      try {
+        const res = await fetch(flaskURL, {
+          method: "GET",
+          headers: { "Accept": "application/json" },
+          cache: "no-store",
+        })
+
+        if (!res.ok) {
+          console.error(`❌ Flask error on horizon ${horizon}:`, res.statusText)
+          continue
+        }
+
+        const data = await res.json()
+
+        // Add a mock "actual" value just for testing visualization
+        const actualPrice =
+          data.predicted_price * (0.95 + Math.random() * 0.1)
+        const actualDirection = actualPrice > data.predicted_price ? "UP" : "DOWN"
 
         history.push({
-          date: date.toISOString(),
-          predicted_price: Number.parseFloat(predictedPrice.toFixed(2)),
-          actual_price: Number.parseFloat(actualPrice.toFixed(2)),
-          direction: isUptrend ? "UP" : "DOWN",
+          date: new Date(Date.now() - horizon * 24 * 60 * 60 * 1000).toISOString(),
+          predicted_price: Number(data.predicted_price.toFixed(2)),
+          actual_price: Number(actualPrice.toFixed(2)),
+          direction: data.direction || (data.change_percent > 0 ? "UP" : "DOWN"),
           actual_direction: actualDirection,
-          confidence: 0.7 + Math.random() * 0.25,
+          confidence: data.confidence || 0.8,
         })
+      } catch (err) {
+        console.error(`⚠️ Error fetching horizon ${horizon}:`, err)
       }
-
-      return history
     }
 
-    const history = generateHistory()
+    // Sort by date (oldest → newest)
+    history.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
-    return NextResponse.json({ history })
+    return NextResponse.json({ symbol, history })
   } catch (error) {
-    console.error("Error fetching prediction history:", error)
-    return NextResponse.json({ error: "Failed to fetch prediction history" }, { status: 500 })
+    console.error("🔥 Error fetching prediction history:", error)
+    return NextResponse.json(
+      { error: "Failed to fetch prediction history" },
+      { status: 500 }
+    )
   }
 }

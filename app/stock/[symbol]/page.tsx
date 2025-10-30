@@ -8,7 +8,7 @@ import { PredictionHistory } from "@/components/prediction-history";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, TrendingUp, TrendingDown, Star } from "lucide-react";
+import { ArrowLeft, Star } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { requireAuth } from "@/lib/auth";
@@ -28,11 +28,13 @@ export default function StockDetailPage() {
   const [predictionResult, setPredictionResult] = useState<any>(null);
   const [modelError, setModelError] = useState(false);
 
+  // 🧩 Load user (for watchlist)
   useEffect(() => {
     const userData = requireAuth();
     setUser(userData);
   }, []);
 
+  // 📈 Fetch stock info
   const fetchStockData = async () => {
     try {
       const response = await fetch(`/api/stocks/${symbol}`);
@@ -52,6 +54,7 @@ export default function StockDetailPage() {
     return () => clearInterval(interval);
   }, [symbol]);
 
+  // ⭐ Watchlist check
   useEffect(() => {
     const fetchWatchlistStatus = async () => {
       if (!user?._id || !symbol) return;
@@ -66,6 +69,7 @@ export default function StockDetailPage() {
     fetchWatchlistStatus();
   }, [symbol, user]);
 
+  // ⭐ Toggle watchlist
   const toggleWatchlist = async () => {
     try {
       if (isInWatchlist) {
@@ -84,21 +88,30 @@ export default function StockDetailPage() {
     }
   };
 
+  // 🤖 Predict from Flask
   const handlePredict = async () => {
     try {
       setShowPrediction(true);
       setModelError(false);
-      const res = await fetch(`http://127.0.0.1:5000/predict`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol, days: predictionDays }),
-      });
-      if (!res.ok) throw new Error("Model not running");
+
+      const res = await fetch(
+        `/api/predict?symbol=${symbol}&horizon=${predictionDays}`,
+        {
+          method: "GET",
+          headers: { Accept: "application/json" },
+          cache: "no-store",
+        }
+      );
+
+      if (!res.ok) throw new Error("Model not running or failed");
       const data = await res.json();
+
+      // ✅ Map Flask response
       setPredictionResult({
-        trend: data.trend || "Neutral",
-        confidence: data.confidence?.toFixed(2) || "N/A",
-        targetPrice: data.target_price?.toFixed(2) || "N/A",
+        trend: data.direction,
+        confidence: data.confidence * 100,
+        targetPrice: data.predicted_price,
+        changePercent: data.change_percent,
       });
     } catch (error) {
       console.error("Prediction error:", error);
@@ -107,6 +120,7 @@ export default function StockDetailPage() {
     }
   };
 
+  // 🌀 Loading UI
   if (isLoading)
     return (
       <DashboardLayout>
@@ -119,6 +133,7 @@ export default function StockDetailPage() {
       </DashboardLayout>
     );
 
+  // ❌ Stock not found
   if (!stockData)
     return (
       <DashboardLayout>
@@ -135,6 +150,7 @@ export default function StockDetailPage() {
   const changePercent = Number(stockData.changePercent) || 0;
   const isPositive = changePercent >= 0;
 
+  // 🎨 Render UI
   return (
     <DashboardLayout>
       <motion.div
@@ -143,6 +159,7 @@ export default function StockDetailPage() {
         transition={{ duration: 0.4 }}
         className="space-y-8"
       >
+        {/* Back button */}
         <Button
           variant="ghost"
           className="mt-4 flex items-center gap-2 hover:bg-muted"
@@ -151,11 +168,13 @@ export default function StockDetailPage() {
           <ArrowLeft className="h-4 w-4" /> Back to Dashboard
         </Button>
 
-        {/* 🔷 Stock Header with Gradient */}
+        {/* Stock Header */}
         <div className="rounded-2xl p-6 bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-4xl font-bold tracking-tight">{stockData.symbol}</h1>
+              <h1 className="text-4xl font-bold tracking-tight">
+                {stockData.symbol}
+              </h1>
               <Button
                 variant="secondary"
                 size="icon"
@@ -165,11 +184,14 @@ export default function StockDetailPage() {
                   isInWatchlist && "bg-yellow-400/90 text-yellow-900"
                 )}
               >
-                <Star className={cn("h-5 w-5", isInWatchlist && "fill-current")} />
+                <Star
+                  className={cn("h-5 w-5", isInWatchlist && "fill-current")}
+                />
               </Button>
             </div>
             <p className="text-blue-100">{stockData.name}</p>
           </div>
+
           <div className="text-left md:text-right mt-4 md:mt-0">
             <div className="flex items-baseline gap-3">
               <span className="text-5xl font-semibold">₹{price.toFixed(2)}</span>
@@ -191,15 +213,18 @@ export default function StockDetailPage() {
         <Card className="shadow-md border border-slate-200">
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-slate-700">
-              Price Chart (30 Days)
+              Price Chart (10 Days)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <StockChart symbol={symbol} historicalData={stockData.historicalData} />
+            <StockChart
+              symbol={symbol}
+              historicalData={stockData.historicalData}
+            />
           </CardContent>
         </Card>
 
-        {/* 🌈 AI Prediction Section (Glass + Animated) */}
+        {/* AI Prediction Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -212,12 +237,14 @@ export default function StockDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Input & Button */}
+              {/* Input & Predict Button */}
               <motion.div
                 whileHover={{ scale: 1.03 }}
                 className="rounded-xl bg-white/70 backdrop-blur-md shadow-md p-6 border border-slate-200"
               >
-                <p className="text-sm text-muted-foreground mb-2">Predict for next (days):</p>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Predict for next (days):
+                </p>
                 <input
                   type="number"
                   min={1}
@@ -234,13 +261,15 @@ export default function StockDetailPage() {
                 </Button>
               </motion.div>
 
-              {/* Result Card */}
+              {/* Result Display */}
               <motion.div
                 whileHover={{ scale: 1.03 }}
                 className="rounded-xl bg-gradient-to-br from-indigo-50 via-white to-violet-50 border border-indigo-100 shadow-lg flex flex-col items-center justify-center text-center p-8"
               >
                 {modelError ? (
-                  <p className="text-destructive font-medium text-lg">⚠️ Model not running</p>
+                  <p className="text-destructive font-medium text-lg">
+                    ⚠️ Model not running
+                  </p>
                 ) : showPrediction && predictionResult ? (
                   <>
                     <h3 className="text-3xl font-extrabold text-indigo-700 mb-2">
@@ -249,15 +278,17 @@ export default function StockDetailPage() {
                     <p className="text-xl text-slate-700">
                       Target:{" "}
                       <span className="font-semibold text-indigo-600">
-                        ₹{predictionResult.targetPrice}
+                        ₹{predictionResult.targetPrice.toFixed(2)}
                       </span>
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Confidence: {predictionResult.confidence}%
+                      Confidence: {predictionResult.confidence.toFixed(1)}%
                     </p>
                   </>
                 ) : (
-                  <p className="text-muted-foreground text-lg">Click “Predict” to see AI insights.</p>
+                  <p className="text-muted-foreground text-lg">
+                    Click “Predict” to see AI insights.
+                  </p>
                 )}
               </motion.div>
 
@@ -266,19 +297,32 @@ export default function StockDetailPage() {
                 whileHover={{ scale: 1.03 }}
                 className="rounded-xl bg-white/70 backdrop-blur-md shadow-md p-6 border border-slate-200"
               >
-                <p className="text-sm text-muted-foreground mb-3">Model Information:</p>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Model Information:
+                </p>
                 <div className="text-sm space-y-1">
-                  <p>Model: <span className="font-medium">CNN-LSTM Hybrid</span></p>
-                  <p>Last Retrained: <span className="font-medium">2 days ago</span></p>
-                  <p>Accuracy: <span className="font-medium text-green-600">92.4%</span></p>
-                  <p>Mean Absolute Error: <span className="font-medium text-blue-600">1.25%</span></p>
+                  <p>
+                    Model: <span className="font-medium">AttCLX Attention</span>
+                  </p>
+                  <p>
+                    Last Retrained:{" "}
+                    <span className="font-medium">2 days ago</span>
+                  </p>
+                  <p>
+                    Accuracy:{" "}
+                    <span className="font-medium text-green-600">92.4%</span>
+                  </p>
+                  <p>
+                    Mean Absolute Error:{" "}
+                    <span className="font-medium text-blue-600">1.25%</span>
+                  </p>
                 </div>
               </motion.div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* History */}
+        {/* Prediction History */}
         <PredictionHistory symbol={symbol} />
       </motion.div>
     </DashboardLayout>
